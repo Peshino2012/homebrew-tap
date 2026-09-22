@@ -8,7 +8,7 @@ class AgentsMdGen < Formula
   depends_on "node"
 
   def install
-    system "npm", "install", *std_npm_install_args(libexec)
+    system "npm", "install", *std_npm_args(libexec)
     bin.install_symlink Dir["#{libexec}/bin/*"]
   end
 
