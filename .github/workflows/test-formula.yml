@@ -1,0 +1,21 @@
+name: test-formula
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Formula/**"
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit the formula
+        run: brew audit --strict --online Formula/agents-md-gen.rb || brew audit --strict Formula/agents-md-gen.rb
+      - name: Install from this tap checkout
+        run: brew install --build-from-source Formula/agents-md-gen.rb
+      - name: Run brew test
+        run: brew test agents-md-gen
+      - name: Verify it actually runs
+        run: agents-md-gen --help
