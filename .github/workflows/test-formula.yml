@@ -11,11 +11,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Tap this local checkout
+        run: brew tap peshino2012/tap "$PWD"
       - name: Audit the formula
-        run: brew audit --strict --online Formula/agents-md-gen.rb || brew audit --strict Formula/agents-md-gen.rb
-      - name: Install from this tap checkout
-        run: brew install --build-from-source Formula/agents-md-gen.rb
+        run: brew audit --strict peshino2012/tap/agents-md-gen
+      - name: Install
+        run: brew install --build-from-source peshino2012/tap/agents-md-gen
       - name: Run brew test
-        run: brew test agents-md-gen
+        run: brew test peshino2012/tap/agents-md-gen
       - name: Verify it actually runs
         run: agents-md-gen --help
