@@ -1,11 +1,11 @@
 {
-    "version": "0.9.1",
+    "version": "0.10.0",
     "description": "Generate a solid AGENTS.md/CLAUDE.md for any repo by detecting its stack, commands, and structure",
     "homepage": "https://www.npmjs.com/package/agents-md-gen",
     "license": "MIT",
     "depends": "nodejs",
-    "url": "https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-0.9.1.tgz",
-    "hash": "sha256:a0eaee9b5584905ab43cb4d2a9816fd568f8096a135e1f54a849d319238b1392",
+    "url": "https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-0.10.0.tgz",
+    "hash": "sha256:cac3edc53240d4d40ec3cf87465889a4fc920ebc8cc39aff88f40198848ed905",
     "extract_dir": "package",
     "pre_install": [
         "Set-Content -Path \"$dir\\agents-md-gen.cmd\" -Value \"@echo off`r`nnode `\"%~dp0bin\\cli.js`\" %*\" -Encoding Ascii"
