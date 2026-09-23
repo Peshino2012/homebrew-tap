@@ -57,4 +57,5 @@ jobs:
       - run: brew install --build-from-source peshino2012/tap/agents-md-gen
       - run: brew test peshino2012/tap/agents-md-gen
       - run: agents-md-gen --help
-      - run: git push
+      # The Scoop autoupdate commits to this same branch; rebase onto it.
+      - run: git pull --rebase && git push
