@@ -1,8 +1,8 @@
 class AgentsMdGen < Formula
   desc "Generate a solid AGENTS.md/CLAUDE.md for any repo"
   homepage "https://www.npmjs.com/package/agents-md-gen"
-  url "https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-0.9.1.tgz"
-  sha256 "a0eaee9b5584905ab43cb4d2a9816fd568f8096a135e1f54a849d319238b1392"
+  url "https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-0.11.0.tgz"
+  sha256 "1255cb74bf1c3036b8e5e3ead4319d7e490f5068c672b5c03f562ee62fcd1d2e"
   license "MIT"
 
   depends_on "node"
