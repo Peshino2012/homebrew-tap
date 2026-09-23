@@ -1,0 +1,54 @@
+name: test-action
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "action/**"
+      - ".github/workflows/test-action.yml"
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make a small sample repo to run against
+        run: |
+          mkdir -p sample/tests
+          printf '[project]\nname = "sample-app"\n[tool.pytest.ini_options]\n' > sample/pyproject.toml
+          touch sample/tests/test_x.py
+
+      - name: Generate AGENTS.md
+        uses: ./action
+        with:
+          directory: sample
+          also-claude-md: 'true'
+
+      - name: Output looks right
+        run: |
+          set -euo pipefail
+          cat sample/AGENTS.md
+          grep -q "## Python" sample/AGENTS.md
+          grep -q "sample-app" sample/AGENTS.md
+          cmp sample/AGENTS.md sample/CLAUDE.md
+
+      - name: Check mode passes on the fresh file
+        uses: ./action
+        with:
+          directory: sample
+          check: 'true'
+
+      - name: Make the file stale
+        run: echo "hand edit" >> sample/AGENTS.md
+
+      - name: Check mode fails on the stale file
+        id: stale
+        continue-on-error: true
+        uses: ./action
+        with:
+          directory: sample
+          check: 'true'
+
+      - name: Assert the stale check failed
+        run: test "${{ steps.stale.outcome }}" = "failure"

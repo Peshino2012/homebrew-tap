@@ -1,0 +1,58 @@
+name: 'AGENTS.md Generator'
+description: 'Generate a solid AGENTS.md/CLAUDE.md by detecting the repo stack, commands, and structure.'
+author: 'Peshino2012'
+branding:
+  icon: 'file-text'
+  color: 'blue'
+
+inputs:
+  directory:
+    description: 'Directory to analyze, relative to the workspace.'
+    required: false
+    default: '.'
+  output:
+    description: 'Output file name.'
+    required: false
+    default: 'AGENTS.md'
+  also-claude-md:
+    description: 'Also write an identical CLAUDE.md.'
+    required: false
+    default: 'false'
+  force:
+    description: 'Overwrite an existing output file.'
+    required: false
+    default: 'false'
+  check:
+    description: 'Fail the job instead of writing, if the file is missing or out of date.'
+    required: false
+    default: 'false'
+  version:
+    description: 'agents-md-gen version to run (npm dist-tag or exact version).'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      env:
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_ALSO_CLAUDE_MD: ${{ inputs.also-claude-md }}
+        INPUT_FORCE: ${{ inputs.force }}
+        INPUT_CHECK: ${{ inputs.check }}
+        INPUT_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        args=("$INPUT_DIRECTORY" "--output" "$INPUT_OUTPUT")
+        if [ "$INPUT_CHECK" = "true" ]; then
+          args+=("--check")
+        else
+          if [ "$INPUT_ALSO_CLAUDE_MD" = "true" ]; then
+            args+=("--also-claude-md")
+          fi
+          if [ "$INPUT_FORCE" = "true" ]; then
+            args+=("--force")
+          fi
+        fi
+        npx --yes "agents-md-gen@${INPUT_VERSION}" "${args[@]}"
