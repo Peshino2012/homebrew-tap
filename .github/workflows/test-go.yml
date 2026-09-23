@@ -1,0 +1,35 @@
+name: test-go
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "go-agents-md-gen/**"
+  push:
+    paths:
+      - "go-agents-md-gen/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and vet locally
+        working-directory: go-agents-md-gen
+        run: |
+          go vet ./...
+          test -z "$(gofmt -l .)"
+          go build -o /tmp/local-build ./cmd/agents-md-gen
+          /tmp/local-build --help
+
+      - name: go install from the public module path (the real distribution path)
+        run: |
+          go install github.com/Peshino2012/homebrew-tap/go-agents-md-gen/cmd/agents-md-gen@${{ github.sha }}
+          "$(go env GOPATH)/bin/agents-md-gen" --help
