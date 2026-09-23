@@ -1,0 +1,82 @@
+name: scoop-autoupdate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.v.outputs.changed }}
+      version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://registry.npmjs.org/agents-md-gen/latest | jq -r .version)
+          current=$(jq -r .version bucket/agents-md-gen.json)
+          echo "npm latest: $latest, manifest: $current"
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$latest" = "$current" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sha=$(curl -fsSL "https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-$latest.tgz" | sha256sum | cut -d' ' -f1)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  update:
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      SHA: ${{ needs.check.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump manifest
+        shell: bash
+        run: |
+          node -e "
+            const fs = require('fs');
+            const f = 'bucket/agents-md-gen.json';
+            const m = JSON.parse(fs.readFileSync(f, 'utf8'));
+            m.version = process.env.VERSION;
+            m.url = 'https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-' + process.env.VERSION + '.tgz';
+            m.hash = 'sha256:' + process.env.SHA;
+            fs.writeFileSync(f, JSON.stringify(m, null, 4) + '\n');
+          "
+          cat bucket/agents-md-gen.json
+
+      - name: Install Scoop
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          Invoke-RestMethod get.scoop.sh | Invoke-Expression
+
+      - name: Install from the bumped manifest and run it
+        shell: powershell
+        run: |
+          $env:PATH = "$env:USERPROFILE\scoop\shims;$env:PATH"
+          scoop install "${{ github.workspace }}\bucket\agents-md-gen.json"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          agents-md-gen --help
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bucket/agents-md-gen.json
+          git commit -m "scoop: agents-md-gen ${VERSION}"
+          git pull --rebase
+          git push

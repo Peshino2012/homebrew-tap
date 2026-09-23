@@ -1,0 +1,34 @@
+name: test-scoop
+
+# Installs the way a user would: add this repo as a bucket over its public
+# URL, then install by name. Testing a local file path instead is what let a
+# 404ing install command go unnoticed before.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "bucket/**"
+  schedule:
+    - cron: "53 6 * * 1"
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Install Scoop
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          Invoke-RestMethod get.scoop.sh | Invoke-Expression
+
+      - name: Add the bucket and install from it
+        shell: powershell
+        run: |
+          $env:PATH = "$env:USERPROFILE\scoop\shims;$env:PATH"
+          scoop bucket add peshino2012 https://github.com/Peshino2012/homebrew-tap
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          scoop install peshino2012/agents-md-gen
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          agents-md-gen --help
+          if ($LASTEXITCODE -ne 0) { exit 1 }
