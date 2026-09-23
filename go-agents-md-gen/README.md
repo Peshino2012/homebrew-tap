@@ -19,7 +19,7 @@ If you already have Node.js, you can skip this wrapper entirely:
 npx agents-md-gen
 ```
 
-See the [main project README](https://github.com/Peshino2012/PD1/tree/main/agents-md-gen)
+See the [main project page](https://www.npmjs.com/package/agents-md-gen)
 for what it detects and its options (`--dry-run`, `--force`, `--check`,
 `--also-claude-md`).
 
