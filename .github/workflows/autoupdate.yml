@@ -1,0 +1,60 @@
+name: autoupdate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.v.outputs.changed }}
+      version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://registry.npmjs.org/agents-md-gen/latest | jq -r .version)
+          current=$(sed -nE 's#.*agents-md-gen-([0-9][^"]*)\.tgz".*#\1#p' Formula/agents-md-gen.rb)
+          echo "npm latest: $latest, formula: $current"
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$latest" = "$current" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sha=$(curl -fsSL "https://registry.npmjs.org/agents-md-gen/-/agents-md-gen-$latest.tgz" | sha256sum | cut -d' ' -f1)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  update:
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      SHA: ${{ needs.check.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump formula and commit locally
+        run: |
+          sed -i '' -E "s#agents-md-gen-[0-9][^\"]*\.tgz#agents-md-gen-${VERSION}.tgz#; s#sha256 \"[0-9a-f]+\"#sha256 \"${SHA}\"#" Formula/agents-md-gen.rb
+          cat Formula/agents-md-gen.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "agents-md-gen ${VERSION}"
+
+      # brew tap clones the committed HEAD, so the bump has to be committed
+      # before it can be tested; it is only pushed if every step passes.
+      - run: brew tap peshino2012/tap "$PWD"
+      - run: brew audit --strict peshino2012/tap/agents-md-gen
+      - run: brew install --build-from-source peshino2012/tap/agents-md-gen
+      - run: brew test peshino2012/tap/agents-md-gen
+      - run: agents-md-gen --help
+      - run: git push
